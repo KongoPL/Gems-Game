@@ -13,9 +13,9 @@ GameCanvas.onLoad( () =>
 	const board = new GameBoard( 8, 8, 4 );
 	const renderer = new GameBoardRenderer( board );
 
-	renderer.init();
-	board.init();
-
 	window.board = board;
 	window.renderer = renderer;
+
+	renderer.init();
+	board.init();
 } );

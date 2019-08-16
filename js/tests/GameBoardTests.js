@@ -14,10 +14,10 @@ class GameBoardTests
 		let board = this._createTestingBoard();
 
 		return this._checkTests( [
-			board.canSwapGems( [2, 0], [2, 1] ),
-			board.canSwapGems( [2, 1], [2, 0] ),
-			board.canSwapGems( [1, 4], [2, 4] ),
-			board.canSwapGems( [4, 3], [3, 3] )
+			board.canSwapGems( board.board[2][0], board.board[2][1] ),
+			board.canSwapGems( board.board[2][1], board.board[2][0] ),
+			board.canSwapGems( board.board[1][4], board.board[2][4] ),
+			board.canSwapGems( board.board[4][3], board.board[3][3] )
 		] );
 	}
 
@@ -27,10 +27,10 @@ class GameBoardTests
 		let board = this._createTestingBoard();
 
 		return this._checkTests( [
-			!board.canSwapGems( [2, 0], [3, 0] ),
-			!board.canSwapGems( [2, 1], [3, 1] ),
-			!board.canSwapGems( [2, 2], [3, 2] ),
-			!board.canSwapGems( [0, 4], [1, 4] )
+			!board.canSwapGems( board.board[2][0], board.board[3][0] ),
+			!board.canSwapGems( board.board[2][1], board.board[3][1] ),
+			!board.canSwapGems( board.board[2][2], board.board[3][2] ),
+			!board.canSwapGems( board.board[0][4], board.board[1][4] )
 		] );
 	}
 
@@ -55,14 +55,16 @@ class GameBoardTests
 			testNumber++;
 
 			let board = this._createTestingBoard();
+			let gemA = board.board[test.swap[0][0]][test.swap[0][1]],
+				gemB = board.board[test.swap[1][0]][test.swap[1][1]];
 
-			board._swapGems( ...test.swap );
+			board._swapGems( gemA, gemB );
 
 			let collectableGems = board._getCollectableGems(),
 				gemsToCollect = test.gemsToCollect;
 
 			testsStatus.push( gemsToCollect.length == collectableGems.length // Have same count of collected gems
-				&& gemsToCollect.filter( ( v ) => collectableGems.find( ( v2 ) => v[0] == v2[0] && v[1] == v2[1] ) ) ); // They are the same gems
+				&& gemsToCollect.filter( ( v ) => collectableGems.find( ( gem ) => gem.x == v[0] && gem.y == v[1] ) ).length > 0 ); // They are the same gems
 		}
 
 		return this._checkTests( testsStatus );
@@ -72,34 +74,34 @@ class GameBoardTests
 	static gemsFallingWorksTest()
 	{
 		let board = this._createTestingBoard(),
-			boardCopy = board.board;
+			boardCopy = JSON.parse( JSON.stringify( board.board ) );
 
-		board._board[2][2] = Gem.EMPTY;
-		board._board[3][2] = Gem.EMPTY;
-		board._board[4][2] = Gem.EMPTY;
+		board.board[2][2].empty();
+		board.board[3][2].empty();
+		board.board[4][2].empty();
 
-		board._board[1][2] = Gem.EMPTY;
-		board._board[1][3] = Gem.EMPTY;
-		board._board[1][4] = Gem.EMPTY;
+		board.board[1][2].empty();
+		board.board[1][3].empty();
+		board.board[1][4].empty();
 
 		board._dropDownGems();
 
 		return this._checkTests( [
-			board._board[2][0] == Gem.EMPTY
-			&& board._board[3][0] == Gem.EMPTY
-			&& board._board[4][0] == Gem.EMPTY,
+			board.board[2][0].isEmpty
+			&& board.board[3][0].isEmpty
+			&& board.board[4][0].isEmpty,
 
-			board._board[2][1] == boardCopy[2][0]
-			&& board._board[3][1] == boardCopy[3][0]
-			&& board._board[4][1] == boardCopy[4][0],
+			board.board[2][1].type == boardCopy[2][0].type
+			&& board.board[3][1].type == boardCopy[3][0].type
+			&& board.board[4][1].type == boardCopy[4][0].type,
 
-			board._board[2][2] == boardCopy[2][1]
-			&& board._board[3][2] == boardCopy[3][1]
-			&& board._board[4][2] == boardCopy[4][1],
+			board.board[2][2].type == boardCopy[2][1].type
+			&& board.board[3][2].type == boardCopy[3][1].type
+			&& board.board[4][2].type == boardCopy[4][1].type,
 
-			board._board[1][2] == Gem.EMPTY
-			&& board._board[1][3] != Gem.EMPTY
-			&& board._board[1][4] != Gem.EMPTY,
+			board.board[1][2].isEmpty
+			&& board.board[1][3].isEmpty == false
+			&& board.board[1][4].isEmpty == false,
 		] );
 	}
 
@@ -108,15 +110,15 @@ class GameBoardTests
 	{
 		let board = this._createTestingBoard();
 
-		board._board[4][0] = Gem.EMPTY;
-		board._board[4][1] = Gem.EMPTY;
-		board._board[4][2] = Gem.EMPTY;
+		board.board[4][0].empty();
+		board.board[4][1].empty();
+		board.board[4][2].empty();
 
 		board._fillBoard();
 
-		return board._board[4][0] != Gem.EMPTY
-			&& board._board[4][1] != Gem.EMPTY
-			&& board._board[4][2] != Gem.EMPTY;
+		return board.board[4][0].isEmpty == false
+			&& board.board[4][1].isEmpty == false
+			&& board.board[4][2].isEmpty == false;
 	}
 
 
@@ -124,7 +126,7 @@ class GameBoardTests
 	{
 		let board = new GameBoard( 5, 5, 3 );
 
-		board._board = [
+		let boardGems = [
 			[0, 1, 2, 3, 4],
 			[0, 2, 3, 3, 1],
 			[1, 0, 1, 1, 2],
@@ -140,6 +142,11 @@ class GameBoardTests
 			33112
 			41203
 		*/
+
+		for ( let x in boardGems )
+			boardGems[x] = boardGems[x].map( ( v, y ) => new Gem( x, y, v ) );
+
+		board.board = boardGems;
 
 		return board;
 	}

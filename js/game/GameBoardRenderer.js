@@ -18,6 +18,10 @@ class GameBoardRenderer
 		this._spawnAnimationTime = 0.250;
 		this._destroyAnimationTime = 0.250;
 
+		this._fallSpeedMin = 5;
+		this._fallSpeedMax = 50;
+		this._fallAcceleration = 100; // pixels
+
 		this._gemSprites = [];
 		this._draggedSprite = null; // PIXI.Sprite
 		this._startDragCoordinates = null; // Vector2D
@@ -28,9 +32,10 @@ class GameBoardRenderer
 	{
 		GameCanvas.getStage().on( 'mousemove', this.__gemDragMove.bind( this ) );
 
-		this.board.onBoardRefill.listen( this._drawBoard.bind( this ) );
+		this.board.onBoardRefill.listen( this._redrawBoard.bind( this ) );
+		this.board.onBoardFill.listen( this._drawBoard.bind( this ) );
 		this.board.onCollectGems.listen( this._onCollectGemsEvent.bind( this ) );
-		//this.board.onBoardFill.listen( this._drawBoard.bind( this ) );
+		this.board.onDropDownGems.listen( this._onDropDownGemsEvent.bind( this ) );
 	}
 
 
@@ -40,8 +45,7 @@ class GameBoardRenderer
 
 		for ( let gem of gems )
 		{
-			let [x, y] = gem;
-			let sprite = this._getGemSpriteAt( x, y );
+			let sprite = this._getGemSpriteAt( gem.x, gem.y );
 
 			if ( !sprite )
 				continue;
@@ -53,31 +57,64 @@ class GameBoardRenderer
 	}
 
 
-	_drawBoard()
+	_onDropDownGemsEvent( gems, fallDistance )
 	{
-		this._destroySprites( this._gemSprites );
+		this._queue.add( () =>
+		{
+			let gemsSprites = [];
 
-		this._queue.add( ( board ) => {
+			for ( let gem of gems )
+			{
+				let sprite = this._getGemSpriteAt( gem.x, gem.y );
+
+				if ( !sprite )
+				{
+					fallDistance.splice( gems.indexOf( gem ), 1 );
+
+					continue;
+				}
+
+				gemsSprites.push( sprite );
+			}
+
+			this._fallSpritesAnimation( gemsSprites, fallDistance ).then( ( v ) => this._queue.next() );
+		} );
+	}
+
+
+	_drawBoard( gems )
+	{
+		this._queue.add( () =>
+		{
 			let spawnedGems = [];
 
-			for ( let x = 0; x < board.length; x++ )
+			for ( let gem of gems )
 			{
-				for ( let y = 0; y < board[x].length; y++ )
-				{
-					let gem = board[x][y];
-					let sprite = this._createGemSprite( gem, x, y );
+				let sprite = this._createGemSprite( gem );
 
-					if ( !sprite )
-						continue;
+				if ( !sprite )
+					continue;
 
-					spawnedGems.push( sprite );
+				spawnedGems.push( sprite );
 
-					this._addGemSpriteEvents( sprite );
-				}
+				this._addGemSpriteEvents( sprite );
 			}
 
 			this._spawnAnimation( spawnedGems ).then( () => this._queue.next() );
-		}, this.board.board );
+		} );
+	}
+
+
+	_redrawBoard()
+	{
+		this._destroySprites( this._gemSprites );
+
+		let gems = [];
+
+		for ( let row of this.board.board )
+			gems.push( ...row );
+
+		this._drawBoard( gems );
 	}
 
 
@@ -93,7 +130,8 @@ class GameBoardRenderer
 			this._destroyAnimation( sprites ).then( () =>
 			{
 				for ( let sprite of sprites )
-					sprite.destroy(); // Animation or sth later
+					if ( sprite._destroyed == false )
+						sprite.destroy();
 
 				this._queue.next();
 			} );
@@ -101,34 +139,25 @@ class GameBoardRenderer
 	}
 
 
-	_createGemSprite( gem, x, y )
+	_createGemSprite( gem )
 	{
-		let spritePath = this._getGemSprite( gem );
+		let spritePath = gem.spritePath;
 
 		if ( !spritePath )
 			return false;
 
 		let gemSprite = GameCanvas.addSprite( spritePath );
 
-		gemSprite.x = x * this._gemWidth + this._gemWidth / 2;
-		gemSprite.y = y * this._gemHeight + this._gemHeight / 2;
+		gemSprite.x = gem.x * this._gemWidth + this._gemWidth / 2;
+		gemSprite.y = gem.y * this._gemHeight + this._gemHeight / 2;
 
 		gemSprite.anchor.set( 0.5, 0.5 );
 
-		gemSprite.data = { x, y };
+		gemSprite.data = { gem };
 
 		this._gemSprites.push( gemSprite );
 
 		return gemSprite;
-	}
-
-
-	_getGemSprite( gem )
-	{
-		if ( gem == -1 )
-			return false;
-
-		return 'gems/' + gem + '.png';
 	}
 
 
@@ -185,22 +214,20 @@ class GameBoardRenderer
 	{
 		this._queue.add( ( board ) =>
 		{
-			let { x, y } = sprite.data;
+			let { x, y } = sprite.data.gem;
 			let gemA = [x, y],
 				gemB = [x + direction[0], y + direction[1]];
 			let gemBSprite = this._getGemSpriteAt( ...gemB );
 
+			if ( !gemBSprite )
+				return;
+
 			this._swapAnimation( sprite, gemBSprite ).then( () =>
 			{
-				if ( this.board.canSwapGems( gemA, gemB ) )
+				if ( this.board.canSwapGems( sprite.data.gem, gemBSprite.data.gem ) )
 				{
-					sprite.data.x = gemB[0];
-					sprite.data.y = gemB[1];
-
-					gemBSprite.data.x = gemA[0];
-					gemBSprite.data.y = gemA[1];
-
-					this.board.swapGems( gemA, gemB );
+					this.board.swapGems( sprite.data.gem, gemBSprite.data.gem );
+					//this.board._refillBoard();
 
 					this._queue.next();
 				}
@@ -213,7 +240,7 @@ class GameBoardRenderer
 
 	_getGemSpriteAt( x, y )
 	{
-		return this._gemSprites.find( ( v ) => v.data.x == x && v.data.y == y );
+		return this._gemSprites.find( ( v ) => v.data.gem.x == x && v.data.gem.y == y );
 	}
 
 
@@ -268,6 +295,9 @@ class GameBoardRenderer
 
 				for ( let i = 0; i < sprites.length; i++ )
 				{
+					if ( sprites[i]._destroyed )
+						continue;
+
 					sprites[i].scale.x =
 						sprites[i].scale.y = animationRemainingTime / this._destroyAnimationTime;
 				}
@@ -300,14 +330,14 @@ class GameBoardRenderer
 
 				animationTimeLeft -= delta;
 
-				if ( animationTimeLeft < 0 );
-				delta += animationTimeLeft;
+				if ( animationTimeLeft < 0 )
+					delta += animationTimeLeft;
 
-				spriteA.x += travelDistance.x * delta;
-				spriteA.y += travelDistance.y * delta;
+				spriteA.x += travelDistance.x * ( delta / this._swapAnimationTime );
+				spriteA.y += travelDistance.y * ( delta / this._swapAnimationTime );
 
-				spriteB.x -= travelDistance.x * delta;
-				spriteB.y -= travelDistance.y * delta;
+				spriteB.x -= travelDistance.x * ( delta / this._swapAnimationTime );
+				spriteB.y -= travelDistance.y * ( delta / this._swapAnimationTime );
 
 				if ( animationTimeLeft <= 0 )
 				{
@@ -317,6 +347,54 @@ class GameBoardRenderer
 					spriteB.x = spriteAStartPosition[0];
 					spriteB.y = spriteAStartPosition[1];
 
+					GameCanvas.removeOnTick( animationCallback );
+
+					callback();
+				}
+			} ).bind( this, resolve );
+
+			GameCanvas.onTick( animationCallback );
+		} );
+	}
+
+
+	_fallSpritesAnimation( sprites, fallDistance )
+	{
+		let fallDestination = sprites.map( ( sprite, i ) => sprite.y + fallDistance[i] * this._gemHeight );
+		let fallSpeed = 0;
+
+		return new Promise( ( resolve, reject ) =>
+		{
+			let animationCallback = ( ( callback ) =>
+			{
+				fallSpeed += this._fallAcceleration * GameCanvas.tickDelta;
+
+				fallSpeed = MathHelper.clamp( fallSpeed, this._fallSpeedMin, this._fallSpeedMax );
+
+				let spritesToDelete = [];
+
+				sprites.forEach( ( sprite, i ) =>
+				{
+					sprite.y += fallSpeed;
+
+					if ( sprite.y >= fallDestination[i] )
+					{
+						sprite.y = fallDestination[i];
+
+						spritesToDelete.push( sprite );
+					}
+				} );
+
+				for ( let sprite of spritesToDelete )
+				{
+					let index = sprites.indexOf( sprite );
+
+					sprites.splice( index, 1 );
+					fallDestination.splice( index, 1 );
+				}
+
+				if ( sprites.length == 0 )
+				{
 					GameCanvas.removeOnTick( animationCallback );
 
 					callback();

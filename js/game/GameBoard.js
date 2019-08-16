@@ -1,15 +1,15 @@
+/**
+ * @property {Gem[][]} board
+*/
 class GameBoard
 {
-	get board() { return JSON.parse( JSON.stringify( this._board ) ); }
-
-
 	constructor( width = 8, height = 8, minimalChainLength = 3 )
 	{
 		this.width = width;
 		this.height = height;
 		this.minimalChainLength = minimalChainLength;
 
-		this._board = []; // Gem[][]
+		this.board = []; // Gem[][]
 
 		// Events:
 		this.onBoardRefill = new EventInstance();
@@ -21,12 +21,15 @@ class GameBoard
 
 	init()
 	{
+		this._createBoard();
 		this._refillBoard();
 	}
 
 	_refillBoard()
 	{
-		this._createBoard();
+		for ( let x = 0; x < this.board.length; x++ )
+			for ( let y = 0; y < this.board[x].length; y++ )
+				this.board[x][y].empty();
 
 		this._fillBoard( false );
 
@@ -39,42 +42,49 @@ class GameBoard
 
 	_createBoard()
 	{
-		this._board = [];
+		this.board = [];
 
 		for ( let x = 0; x < this.width; x++ )
 		{
-			this._board[x] = [];
+			this.board[x] = [];
 
 			for ( let y = 0; y < this.height; y++ )
-				this._board[x][y] = Gem.EMPTY;
+				this.board[x][y] = new Gem( x, y );
 		}
 	}
 
 	_fillBoard( emitEventWhileDone = true )
 	{
+		let createdGems = [];
+
 		for ( let x = 0; x < this.width; x++ )
 		{
 			for ( let y = 0; y < this.height; y++ )
 			{
-				if ( this._board[x][y] == Gem.EMPTY )
-					this._board[x][y] = this._getRandomGem();
+				if ( this.board[x][y].isEmpty )
+				{
+					this.board[x][y] = Gem.createRandom( x, y );
+
+					createdGems.push( this.board[x][y] );
+				}
 			}
 		}
 
-		if ( !this._hasAnyPossibleGemsSwap() )
-			this._refillBoard();
-		else if ( emitEventWhileDone )
-			this.onBoardFill.emit();
-	}
+		
 
-	_getRandomGem()
-	{
-		return MathHelper.rand( 0, 4 );
+		if ( !this._hasAnyPossibleGemsSwap() || window.xdd )
+		{
+			if ( typeof window.xdd != 'undefined' )
+				window.xddd = false;
+
+			this._refillBoard();
+		}
+		else if ( emitEventWhileDone )
+			this.onBoardFill.emit( createdGems );
 	}
 
 	_hasAnyPossibleGemsSwap()
 	{
-		let boardCopy = VariableHelper.clone( this._board );
 		let swapDirections = [
 			[1, 0],
 			[-1, 0],
@@ -86,23 +96,24 @@ class GameBoard
 		{
 			for ( let y = 0; y < this.height; y++ )
 			{
-				let gem = [x, y];
+				let gem = this.board[x][y];
 
 				for ( let i = 0; i < 4; i++ )
 				{
-					let swapDirection = swapDirections[i];
+					let swapDirection = swapDirections[i],
+						swapingGem = this.__getGemAt( x + swapDirection[0], y + swapDirection[1] );
 
-					let swapingGem = [
-						x + swapDirection[0],
-						y + swapDirection[1]
-					];
+					if ( !swapingGem )
+						continue;
 
-					if ( this._swapGems( gem, swapingGem, boardCopy ) )
+					if ( this._swapGems( gem, swapingGem ) )
 					{
-						if ( this._hasCollectableGems( boardCopy ) )
+						let hasCollectableGems = this._hasCollectableGems();
+
+						this._swapGems( swapingGem, gem );
+
+						if ( hasCollectableGems )
 							return true;
-						else
-							this._swapGems( swapingGem, gem, boardCopy );
 					}
 				}
 			}
@@ -112,24 +123,22 @@ class GameBoard
 	}
 
 
-	_hasCollectableGems( board = this._board )
+	_hasCollectableGems()
 	{
-		return ( this._getCollectableGems( board ).length > 0 );
+		return ( this._getCollectableGems().length > 0 );
 	}
 
 
-	_getCollectableGems( board = this._board )
+	_getCollectableGems()
 	{
 		let collectableChain = [],
 			checkingDimensions = [
 				{
 					size: this.width,
-					get: this.__getColumn.bind( this ),
-					reverseCoords: false
+					get: this.__getColumn.bind( this )
 				}, {
 					size: this.height,
-					get: this.__getRow.bind( this ),
-					reverseCoords: true
+					get: this.__getRow.bind( this )
 				}
 			];
 
@@ -137,29 +146,24 @@ class GameBoard
 		{
 			for ( let i = 0; i < dimension.size; i++ )
 			{
-				let dimensionGems = dimension.get( i, board ),
-					currentGem = Gem.EMPTY,
+				let dimensionGems = dimension.get( i ),
+					currentGem = null,
 					dimensionChain = [];
 
 				for ( let j = 0; j < dimensionGems.length; j++ )
 				{
-					if ( dimensionGems[j] != currentGem || currentGem == Gem.EMPTY )
+					let gem = dimensionGems[j];
+
+					if ( currentGem == null || gem.type != currentGem.type )
 					{
 						if ( dimensionChain.length >= this.minimalChainLength )
 							collectableChain.push( ...dimensionChain );
 
 						dimensionChain = [];
-						currentGem = dimensionGems[j];
+						currentGem = gem;
 					}
 
-					let coords;
-
-					if ( dimension.reverseCoords )
-						coords = [j, i];
-					else
-						coords = [i, j];
-
-					dimensionChain.push( coords );
+					dimensionChain.push( gem );
 				}
 
 				if ( dimensionChain.length >= this.minimalChainLength )
@@ -168,43 +172,58 @@ class GameBoard
 		}
 
 		// Remove duplicates:
-		return collectableChain.filter( ( v, i ) => collectableChain.findIndex( ( v2, i2 ) => i2 > i && v[0] == v2[0] && v[1] == v2[1] ) == -1 );
+		return collectableChain.filter( ( v, i ) => collectableChain.findIndex( ( v2, i2 ) => i2 > i && v == v2 ) == -1 );
 	}
 
 
-	__getRow( number, board = this._board )
+	__getRow( number )
 	{
-		return board.map( ( v ) => v[number] );
+		return this.board.map( ( v ) => v[number] );
 	}
 
 
-	__getColumn( number, board = this._board )
+	__getColumn( number )
 	{
-		return board[number];
+		return this.board[number];
 	}
 
 
-	_swapGems( [x1, y1], [x2, y2], board = this._board )
+	_swapGems( gemA, gemB )
 	{
-		if ( !this.__hasGem( x1, y1, board ) || !this.__hasGem( x2, y2, board ) )
+		if ( !this.__hasGem( gemA ) || !this.__hasGem( gemB ) )
 			return false;
 
-		[board[x1][y1], board[x2][y2]] = [board[x2][y2], board[x1][y1]];
+		[gemA.x, gemA.y, gemB.x, gemB.y] = [gemB.x, gemB.y, gemA.x, gemA.y];
+		[this.board[gemA.x][gemA.y], this.board[gemB.x][gemB.y]] = [this.board[gemB.x][gemB.y], this.board[gemA.x][gemA.y]];
 
 		return true;
 	}
 
-
-	__hasGem( x, y, board = this._board )
+	__getGemAt( x, y )
 	{
-		return ( typeof board[x] == 'object' && typeof board[x][y] == 'number' );
+		if ( this.__hasGemAt( x, y ) )
+			return this.board[x][y];
+
+		return null;
+	}
+
+
+	__hasGem( gem )
+	{
+		return ( this.__hasGemAt( gem.x, gem.y ) && this.board[gem.x][gem.y] == gem );
+	}
+
+
+	__hasGemAt( x, y )
+	{
+		return ( typeof this.board[x] == 'object' && typeof this.board[x][y] == 'object' );
 	}
 
 
 	/**
 	 *
-	 * @param {[x, y]} gemA	Coordinates
-	 * @param {[x, y]} gemB	Coordinates
+	 * @param {Gem} gemA
+	 * @param {Gem} gemB
 	 * @returns {boolean}
 	 */
 	swapGems( gemA, gemB )
@@ -234,22 +253,20 @@ class GameBoard
 
 	canSwapGems( gemA, gemB )
 	{
-		let boardCopy = VariableHelper.clone( this._board );
+		this._swapGems( gemA, gemB );
 
-		this._swapGems( gemA, gemB, boardCopy );
+		const hasGemsToCollect = this._hasCollectableGems();
 
-		return this._hasCollectableGems( boardCopy );
+		this._swapGems( gemB, gemA );
+
+		return hasGemsToCollect;
 	}
 
 
 	_collectGems( gems )
 	{
 		for ( let gem of gems )
-		{
-			let [x, y] = gem;
-
-			this._board[x][y] = Gem.EMPTY;
-		}
+			gem.empty();
 
 		this.onCollectGems.emit( gems );
 	}
@@ -257,41 +274,60 @@ class GameBoard
 
 	_dropDownGems()
 	{
-		let fallenGems = [];
+		let fallenGems = [],
+			fallDistance = [];
 
-		for ( let x = 0; x < this._board.length; x++ )
+		for ( let x = 0; x < this.board.length; x++ )
 		{
-			for ( let y = 1; y < this._board[x].length; y++ )
+			for ( let y = 1; y < this.board[x].length; y++ )
 			{
-				let gem = this._board[x][y];
+				let gem = this.board[x][y];
 
-				if ( gem != Gem.EMPTY )
+				if ( !gem.isEmpty )
 					continue;
 
 				// Fall gems down:
 				for ( let y2 = y - 1; y2 >= 0; y2-- )
-					this._board[x][y2 + 1] = this._board[x][y2];
+				{
+					let fallingGem = this.board[x][y2];
 
-				this._board[x][0] = Gem.EMPTY;
+					if ( fallingGem.isEmpty == false )
+					{
+						let fallenGemIndex = fallenGems.indexOf( fallingGem );
+
+						if ( fallenGemIndex == -1 )
+						{
+							fallenGemIndex = fallenGems.push( fallingGem ) - 1;
+							fallDistance.push( 0 );
+						}
+
+						fallingGem.y++
+						fallDistance[fallenGemIndex]++;
+					}
+
+					this.board[x][y2 + 1] = fallingGem;
+				}
+
+				this.board[x][0] = gem;
 			}
 		}
 
-		this.onDropDownGems.emit();
+		this.onDropDownGems.emit( fallenGems, fallDistance );
 	}
 
 
-	debugDrawBoard( board = this._board )
+	debugDrawBoard()
 	{
 		let table = [];
 
-		for ( let x = 0; x < board.length; x++ )
+		for ( let x = 0; x < this.board.length; x++ )
 		{
-			for ( let y = 0; y < board[x].length; y++ )
+			for ( let y = 0; y < this.board[x].length; y++ )
 			{
 				if ( x == 0)
 					table[y] = [];
 
-				table[y][x] = board[x][y];
+				table[y][x] = this.board[x][y].type;
 			}
 		}
 
