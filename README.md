@@ -2,7 +2,7 @@
 Project that I made to learn a little bit of ES6 and Pixi.JS
 
 ## Screenshoot
-![Screenshot](https://raw.githubusercontent.com/KongoPL/Gems-Game/assets/screenshoot.png)
+![Screenshot](https://raw.githubusercontent.com/KongoPL/Gems-Game/master/assets/screenshoot.png)
 
 ## What I learned?
 * JS ES2015
