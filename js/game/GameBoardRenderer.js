@@ -41,11 +41,11 @@ class GameBoardRenderer
 
 	_onCollectGemsEvent( gems )
 	{
-		let gemsSprites = [];
+		const gemsSprites = [];
 
 		for ( let gem of gems )
 		{
-			let sprite = this._getGemSpriteAt( gem.x, gem.y );
+			const sprite = this._getGemSpriteAt( gem.x, gem.y );
 
 			if ( !sprite )
 				continue;
@@ -61,11 +61,11 @@ class GameBoardRenderer
 	{
 		this._queue.add( () =>
 		{
-			let gemsSprites = [];
+			const gemsSprites = [];
 
 			for ( let gem of gems )
 			{
-				let sprite = this._getGemSpriteAt( gem.x, gem.y );
+				const sprite = this._getGemSpriteAt( gem.x, gem.y );
 
 				if ( !sprite )
 				{
@@ -86,11 +86,11 @@ class GameBoardRenderer
 	{
 		this._queue.add( () =>
 		{
-			let spawnedGems = [];
+			const spawnedGems = [];
 
 			for ( let gem of gems )
 			{
-				let sprite = this._createGemSprite( gem );
+				const sprite = this._createGemSprite( gem );
 
 				if ( !sprite )
 					continue;
@@ -109,7 +109,7 @@ class GameBoardRenderer
 	{
 		this._destroySprites( this._gemSprites );
 
-		let gems = [];
+		const gems = [];
 
 		for ( let row of this.board.board )
 			gems.push( ...row );
@@ -141,12 +141,12 @@ class GameBoardRenderer
 
 	_createGemSprite( gem )
 	{
-		let spritePath = gem.spritePath;
+		const spritePath = gem.spritePath;
 
 		if ( !spritePath )
 			return false;
 
-		let gemSprite = GameCanvas.addSprite( spritePath );
+		const gemSprite = GameCanvas.addSprite( spritePath );
 
 		gemSprite.x = gem.x * this._gemWidth + this._gemWidth / 2;
 		gemSprite.y = gem.y * this._gemHeight + this._gemHeight / 2;
@@ -181,16 +181,16 @@ class GameBoardRenderer
 		if ( !this._draggedSprite )
 			return;
 
-		let { x, y } = event.data.global;
-		let delta = ( new Vector2D( x, y ) ).subVector( this._startDragCoordinates );
+		const { x, y } = event.data.global;
+		const delta = ( new Vector2D( x, y ) ).subVector( this._startDragCoordinates );
 
 		if ( delta.length < this._minimalDragDistance )
 			return;
 
 		delta.normalize();
 
-		let direction = [0, 0],
-			deltaXAbs = Math.abs( delta.x ),
+		let direction = [0, 0];
+		const deltaXAbs = Math.abs( delta.x ),
 			deltaYAbs = Math.abs( delta.y );
 
 		if ( delta.x > 0 && deltaXAbs > deltaYAbs ) direction = [1, 0];
@@ -214,10 +214,7 @@ class GameBoardRenderer
 	{
 		this._queue.add( ( board ) =>
 		{
-			let { x, y } = sprite.data.gem;
-			let gemA = [x, y],
-				gemB = [x + direction[0], y + direction[1]];
-			let gemBSprite = this._getGemSpriteAt( ...gemB );
+			const gemBSprite = this._getGemSpriteAt( sprite.data.gem.x + direction[0], sprite.data.gem.y + direction[1] );
 
 			if ( !gemBSprite )
 				return;
@@ -227,7 +224,6 @@ class GameBoardRenderer
 				if ( this.board.canSwapGems( sprite.data.gem, gemBSprite.data.gem ) )
 				{
 					this.board.swapGems( sprite.data.gem, gemBSprite.data.gem );
-					//this.board._refillBoard();
 
 					this._queue.next();
 				}
@@ -250,7 +246,7 @@ class GameBoardRenderer
 
 		return new Promise( ( resolve, reject ) =>
 		{
-			let animation = () =>
+			const animation = () =>
 			{
 				let delta = GameCanvas.tickDelta;
 
@@ -284,7 +280,7 @@ class GameBoardRenderer
 
 		return new Promise( ( resolve, reject ) =>
 		{
-			let animation = () =>
+			const animation = () =>
 			{
 				let delta = GameCanvas.tickDelta;
 
@@ -317,14 +313,14 @@ class GameBoardRenderer
 
 	_swapAnimation( spriteA, spriteB )
 	{
-		let travelDistance = new Vector2D( spriteB.x - spriteA.x, spriteB.y - spriteA.y ),
+		const travelDistance = new Vector2D( spriteB.x - spriteA.x, spriteB.y - spriteA.y ),
 			spriteAStartPosition = [spriteA.x, spriteA.y],
-			spriteBStartPosition = [spriteB.x, spriteB.y],
-			animationTimeLeft = this._swapAnimationTime;
+			spriteBStartPosition = [spriteB.x, spriteB.y];
+		let animationTimeLeft = this._swapAnimationTime;
 
 		return new Promise( ( resolve, reject ) =>
 		{
-			let animationCallback = (( callback ) =>
+			const animationCallback = (( callback ) =>
 			{
 				let delta = GameCanvas.tickDelta;
 
@@ -360,18 +356,17 @@ class GameBoardRenderer
 
 	_fallSpritesAnimation( sprites, fallDistance )
 	{
-		let fallDestination = sprites.map( ( sprite, i ) => sprite.y + fallDistance[i] * this._gemHeight );
+		const fallDestination = sprites.map( ( sprite, i ) => sprite.y + fallDistance[i] * this._gemHeight );
 		let fallSpeed = 0;
 
 		return new Promise( ( resolve, reject ) =>
 		{
-			let animationCallback = ( ( callback ) =>
+			const animationCallback = ( ( callback ) =>
 			{
 				fallSpeed += this._fallAcceleration * GameCanvas.tickDelta;
-
 				fallSpeed = MathHelper.clamp( fallSpeed, this._fallSpeedMin, this._fallSpeedMax );
 
-				let spritesToDelete = [];
+				const spritesToDelete = [];
 
 				sprites.forEach( ( sprite, i ) =>
 				{
@@ -387,7 +382,7 @@ class GameBoardRenderer
 
 				for ( let sprite of spritesToDelete )
 				{
-					let index = sprites.indexOf( sprite );
+					const index = sprites.indexOf( sprite );
 
 					sprites.splice( index, 1 );
 					fallDestination.splice( index, 1 );

@@ -11,7 +11,7 @@ class GameBoardTests
 
 	static swapWorksTest()
 	{
-		let board = this._createTestingBoard();
+		const board = this._createTestingBoard();
 
 		return this._checkTests( [
 			board.canSwapGems( board.board[2][0], board.board[2][1] ),
@@ -24,7 +24,7 @@ class GameBoardTests
 
 	static swapFailsTest()
 	{
-		let board = this._createTestingBoard();
+		const board = this._createTestingBoard();
 
 		return this._checkTests( [
 			!board.canSwapGems( board.board[2][0], board.board[3][0] ),
@@ -37,7 +37,7 @@ class GameBoardTests
 
 	static collectingWorksTest()
 	{
-		let tests = [
+		const tests = [
 			{
 				swap: [[2, 0], [2, 1]],
 				gemsToCollect: [
@@ -48,19 +48,19 @@ class GameBoardTests
 		],
 			testNumber = 0;
 
-		let testsStatus = [];
+		const testsStatus = [];
 
 		for ( let test of tests )
 		{
 			testNumber++;
 
-			let board = this._createTestingBoard();
-			let gemA = board.board[test.swap[0][0]][test.swap[0][1]],
+			const board = this._createTestingBoard();
+			const gemA = board.board[test.swap[0][0]][test.swap[0][1]],
 				gemB = board.board[test.swap[1][0]][test.swap[1][1]];
 
 			board._swapGems( gemA, gemB );
 
-			let collectableGems = board._getCollectableGems(),
+			const collectableGems = board._getCollectableGems(),
 				gemsToCollect = test.gemsToCollect;
 
 			testsStatus.push( gemsToCollect.length == collectableGems.length // Have same count of collected gems
@@ -73,7 +73,7 @@ class GameBoardTests
 
 	static gemsFallingWorksTest()
 	{
-		let board = this._createTestingBoard(),
+		const board = this._createTestingBoard(),
 			boardCopy = JSON.parse( JSON.stringify( board.board ) );
 
 		board.board[2][2].empty();
@@ -108,7 +108,7 @@ class GameBoardTests
 
 	static gemsSpawningWorksTest()
 	{
-		let board = this._createTestingBoard();
+		const board = this._createTestingBoard();
 
 		board.board[4][0].empty();
 		board.board[4][1].empty();
@@ -124,9 +124,9 @@ class GameBoardTests
 
 	static _createTestingBoard()
 	{
-		let board = new GameBoard( 5, 5, 3 );
+		const board = new GameBoard( 5, 5, 3 );
 
-		let boardGems = [
+		const boardGems = [
 			[0, 1, 2, 3, 4],
 			[0, 2, 3, 3, 1],
 			[1, 0, 1, 1, 2],

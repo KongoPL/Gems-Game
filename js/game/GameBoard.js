@@ -55,7 +55,7 @@ class GameBoard
 
 	_fillBoard( emitEventWhileDone = true )
 	{
-		let createdGems = [];
+		const createdGems = [];
 
 		for ( let x = 0; x < this.width; x++ )
 		{
@@ -85,7 +85,7 @@ class GameBoard
 
 	_hasAnyPossibleGemsSwap()
 	{
-		let swapDirections = [
+		const swapDirections = [
 			[1, 0],
 			[-1, 0],
 			[0, 1],
@@ -96,7 +96,7 @@ class GameBoard
 		{
 			for ( let y = 0; y < this.height; y++ )
 			{
-				let gem = this.board[x][y];
+				const gem = this.board[x][y];
 
 				for ( let i = 0; i < 4; i++ )
 				{
@@ -108,7 +108,7 @@ class GameBoard
 
 					if ( this._swapGems( gem, swapingGem ) )
 					{
-						let hasCollectableGems = this._hasCollectableGems();
+						const hasCollectableGems = this._hasCollectableGems();
 
 						this._swapGems( swapingGem, gem );
 
@@ -131,7 +131,7 @@ class GameBoard
 
 	_getCollectableGems()
 	{
-		let collectableChain = [],
+		const collectableChain = [],
 			checkingDimensions = [
 				{
 					size: this.width,
@@ -146,13 +146,13 @@ class GameBoard
 		{
 			for ( let i = 0; i < dimension.size; i++ )
 			{
-				let dimensionGems = dimension.get( i ),
-					currentGem = null,
-					dimensionChain = [];
+				const dimensionGems = dimension.get( i );
+				let dimensionChain = [],
+					currentGem = null;
 
 				for ( let j = 0; j < dimensionGems.length; j++ )
 				{
-					let gem = dimensionGems[j];
+					const gem = dimensionGems[j];
 
 					if ( currentGem == null || gem.type != currentGem.type )
 					{
@@ -274,14 +274,14 @@ class GameBoard
 
 	_dropDownGems()
 	{
-		let fallenGems = [],
+		const fallenGems = [],
 			fallDistance = [];
 
 		for ( let x = 0; x < this.board.length; x++ )
 		{
 			for ( let y = 1; y < this.board[x].length; y++ )
 			{
-				let gem = this.board[x][y];
+				const gem = this.board[x][y];
 
 				if ( !gem.isEmpty )
 					continue;
@@ -289,7 +289,7 @@ class GameBoard
 				// Fall gems down:
 				for ( let y2 = y - 1; y2 >= 0; y2-- )
 				{
-					let fallingGem = this.board[x][y2];
+					const fallingGem = this.board[x][y2];
 
 					if ( fallingGem.isEmpty == false )
 					{
@@ -318,7 +318,7 @@ class GameBoard
 
 	debugDrawBoard()
 	{
-		let table = [];
+		const table = [];
 
 		for ( let x = 0; x < this.board.length; x++ )
 		{
