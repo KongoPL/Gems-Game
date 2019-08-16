@@ -1,3 +1,4 @@
 GameBoardRenderer tests!
 Something for animations (class)
 Don't make animation while after filling the stage you have to refill it!
+Sometimes gems don't want to fall down (probably wrong fall distance)
