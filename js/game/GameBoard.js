@@ -1,6 +1,3 @@
-/**
- * @property {Gem[][]} board
-*/
 class GameBoard
 {
 	constructor( width = 8, height = 8, minimalChainLength = 3 )
@@ -25,20 +22,6 @@ class GameBoard
 		this._refillBoard();
 	}
 
-	_refillBoard()
-	{
-		for ( let x = 0; x < this.board.length; x++ )
-			for ( let y = 0; y < this.board[x].length; y++ )
-				this.board[x][y].empty();
-
-		this._fillBoard( false );
-
-		if ( this._hasCollectableGems() )
-			this._refillBoard();
-		else
-			this.onBoardRefill.emit();
-	}
-
 
 	_createBoard()
 	{
@@ -52,6 +35,27 @@ class GameBoard
 				this.board[x][y] = new Gem( x, y );
 		}
 	}
+
+
+	_refillBoard()
+	{
+		this._emptyBoard();
+		this._fillBoard( false );
+
+		if ( this._hasCollectableGems() )
+			this._refillBoard();
+		else
+			this.onBoardRefill.emit();
+	}
+
+
+	_emptyBoard()
+	{
+		for ( let x = 0; x < this.board.length; x++ )
+			for ( let y = 0; y < this.board[x].length; y++ )
+				this.board[x][y].empty();
+	}
+
 
 	_fillBoard( emitEventWhileDone = true )
 	{
@@ -70,18 +74,12 @@ class GameBoard
 			}
 		}
 
-		
-
-		if ( !this._hasAnyPossibleGemsSwap() || window.xdd )
-		{
-			if ( typeof window.xdd != 'undefined' )
-				window.xddd = false;
-
+		if ( !this._hasAnyPossibleGemsSwap() )
 			this._refillBoard();
-		}
 		else if ( emitEventWhileDone )
 			this.onBoardFill.emit( createdGems );
 	}
+
 
 	_hasAnyPossibleGemsSwap()
 	{
@@ -96,12 +94,12 @@ class GameBoard
 		{
 			for ( let y = 0; y < this.height; y++ )
 			{
-				const gem = this.board[x][y];
+				const gem = this.getGemAt( x, y );
 
-				for ( let i = 0; i < 4; i++ )
+				for ( let i = 0; i < swapDirections.length; i++ )
 				{
 					let swapDirection = swapDirections[i],
-						swapingGem = this.__getGemAt( x + swapDirection[0], y + swapDirection[1] );
+						swapingGem = this.getGemAt( x + swapDirection[0], y + swapDirection[1] );
 
 					if ( !swapingGem )
 						continue;
@@ -122,6 +120,14 @@ class GameBoard
 		return false;
 	}
 
+
+	getGemAt( x, y )
+	{
+		if ( this.__hasGemAt( x, y ) )
+			return this.board[x][y];
+
+		return null;
+	}
 
 	_hasCollectableGems()
 	{
@@ -199,18 +205,10 @@ class GameBoard
 		return true;
 	}
 
-	__getGemAt( x, y )
-	{
-		if ( this.__hasGemAt( x, y ) )
-			return this.board[x][y];
-
-		return null;
-	}
-
 
 	__hasGem( gem )
 	{
-		return ( this.__hasGemAt( gem.x, gem.y ) && this.board[gem.x][gem.y] == gem );
+		return ( this.__hasGemAt( gem.x, gem.y ) && this.getGemAt( gem.x, gem.y ) == gem );
 	}
 
 
@@ -324,7 +322,7 @@ class GameBoard
 		{
 			for ( let y = 0; y < this.board[x].length; y++ )
 			{
-				if ( x == 0)
+				if ( x == 0 )
 					table[y] = [];
 
 				table[y][x] = this.board[x][y].type;

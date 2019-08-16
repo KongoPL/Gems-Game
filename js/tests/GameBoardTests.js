@@ -14,10 +14,10 @@ class GameBoardTests
 		const board = this._createTestingBoard();
 
 		return this._checkTests( [
-			board.canSwapGems( board.board[2][0], board.board[2][1] ),
-			board.canSwapGems( board.board[2][1], board.board[2][0] ),
-			board.canSwapGems( board.board[1][4], board.board[2][4] ),
-			board.canSwapGems( board.board[4][3], board.board[3][3] )
+			board.canSwapGems( board.getGemAt(2, 0), board.getGemAt(2, 1) ),
+			board.canSwapGems( board.getGemAt(2, 1), board.getGemAt(2, 0) ),
+			board.canSwapGems( board.getGemAt(1, 4), board.getGemAt(2, 4) ),
+			board.canSwapGems( board.getGemAt(4, 3), board.getGemAt(3, 3) )
 		] );
 	}
 
@@ -27,10 +27,10 @@ class GameBoardTests
 		const board = this._createTestingBoard();
 
 		return this._checkTests( [
-			!board.canSwapGems( board.board[2][0], board.board[3][0] ),
-			!board.canSwapGems( board.board[2][1], board.board[3][1] ),
-			!board.canSwapGems( board.board[2][2], board.board[3][2] ),
-			!board.canSwapGems( board.board[0][4], board.board[1][4] )
+			!board.canSwapGems( board.getGemAt(2, 0), board.getGemAt(3, 0) ),
+			!board.canSwapGems( board.getGemAt(2, 1), board.getGemAt(3, 1) ),
+			!board.canSwapGems( board.getGemAt(2, 2), board.getGemAt(3, 2) ),
+			!board.canSwapGems( board.getGemAt(0, 4), board.getGemAt(1, 4) )
 		] );
 	}
 
@@ -55,8 +55,8 @@ class GameBoardTests
 			testNumber++;
 
 			const board = this._createTestingBoard();
-			const gemA = board.board[test.swap[0][0]][test.swap[0][1]],
-				gemB = board.board[test.swap[1][0]][test.swap[1][1]];
+			const gemA = board.getGemAt( test.swap[0, 0], test.swap[0][1] ),
+				gemB = board.getGemAt( test.swap[1, 0], test.swap[1][1] );
 
 			board._swapGems( gemA, gemB );
 
@@ -76,32 +76,32 @@ class GameBoardTests
 		const board = this._createTestingBoard(),
 			boardCopy = JSON.parse( JSON.stringify( board.board ) );
 
-		board.board[2][2].empty();
-		board.board[3][2].empty();
-		board.board[4][2].empty();
+		board.getGemAt(2, 2).empty();
+		board.getGemAt(3, 2).empty();
+		board.getGemAt(4, 2).empty();
 
-		board.board[1][2].empty();
-		board.board[1][3].empty();
-		board.board[1][4].empty();
+		board.getGemAt(1, 2).empty();
+		board.getGemAt(1, 3).empty();
+		board.getGemAt(1, 4).empty();
 
 		board._dropDownGems();
 
 		return this._checkTests( [
-			board.board[2][0].isEmpty
-			&& board.board[3][0].isEmpty
-			&& board.board[4][0].isEmpty,
+			board.getGemAt(2, 0).isEmpty
+			&& board.getGemAt(3, 0).isEmpty
+			&& board.getGemAt(4, 0).isEmpty,
 
-			board.board[2][1].type == boardCopy[2][0].type
-			&& board.board[3][1].type == boardCopy[3][0].type
-			&& board.board[4][1].type == boardCopy[4][0].type,
+			board.getGemAt(2, 1).type == boardCopy[2][0].type
+			&& board.getGemAt(3, 1).type == boardCopy[3][0].type
+			&& board.getGemAt(4, 1).type == boardCopy[4][0].type,
 
-			board.board[2][2].type == boardCopy[2][1].type
-			&& board.board[3][2].type == boardCopy[3][1].type
-			&& board.board[4][2].type == boardCopy[4][1].type,
+			board.getGemAt(2, 2).type == boardCopy[2][1].type
+			&& board.getGemAt(3, 2).type == boardCopy[3][1].type
+			&& board.getGemAt(4, 2).type == boardCopy[4][1].type,
 
-			board.board[1][2].isEmpty
-			&& board.board[1][3].isEmpty == false
-			&& board.board[1][4].isEmpty == false,
+			board.getGemAt(1, 2).isEmpty
+			&& board.getGemAt(1, 3).isEmpty == false
+			&& board.getGemAt(1, 4).isEmpty == false,
 		] );
 	}
 
@@ -110,15 +110,15 @@ class GameBoardTests
 	{
 		const board = this._createTestingBoard();
 
-		board.board[4][0].empty();
-		board.board[4][1].empty();
-		board.board[4][2].empty();
+		board.getGemAt(4, 0).empty();
+		board.getGemAt(4, 1).empty();
+		board.getGemAt(4, 2).empty();
 
 		board._fillBoard();
 
-		return board.board[4][0].isEmpty == false
-			&& board.board[4][1].isEmpty == false
-			&& board.board[4][2].isEmpty == false;
+		return board.getGemAt(4, 0).isEmpty == false
+			&& board.getGemAt(4, 1).isEmpty == false
+			&& board.getGemAt(4, 2).isEmpty == false;
 	}
 
 

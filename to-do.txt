@@ -1,0 +1,3 @@
+GameBoardRenderer tests!
+Something for animations (class)
+Don't make animation while after filling the stage you have to refill it!
